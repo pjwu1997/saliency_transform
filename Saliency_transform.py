@@ -31,8 +31,6 @@ repeat_times = config["repeat_times"]
 early_stop = config["early_stop"]
 
 model = ResNet18(num_classes=10).cuda()
-num_epoch = 50
-pretrain_epoch = 50
 # optimizer = Adam(model.parameters())
 optimizer = torch.optim.SGD(model.parameters(), lr=0.1,
                       momentum=0.9, weight_decay=5e-4)
@@ -281,11 +279,11 @@ for method in job_type:
     augment_fn_list.append(globals()[method])
 
 def main():
+    now = datetime.now()
+    current_time = now.strftime("%d-%m-%Y-%H-%M-%S")
     for times in range(repeat_times):
-        now = datetime.now()
-        current_time = now.strftime("%d-%m-%Y-%H-%M-%S")
-        file_name = f'./{file_path}/{current_time}/{times}/result_{current_time}.csv'
-        file_name_2 = f'./{file_path}/{current_time}/{times}/result_{current_time}_saliency.csv'
+        file_name = f'./{file_path}/{current_time}/{times}/result.csv'
+        file_name_2 = f'./{file_path}/{current_time}/{times}/result_saliency.csv'
         os.makedirs(os.path.dirname(file_name), exist_ok=True)
         current_best_val = 0
         current_test_acc = 0
@@ -329,3 +327,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+                    
+            
+            
+            

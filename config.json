@@ -1,0 +1,12 @@
+{
+    "file_path": "scale_cover_noise",
+    "job_type": ["augment_scale", "augment_cover", "augment_noise"],
+    "augment_prob": 0.2,
+    "num_epoch": 400,
+    "pretrain_epoch": 10,
+    "interval": 20,
+    "threshold": 0.6,
+    "img_size": 0.3,
+    "repeat_times": 5,
+    "early_stop": 30
+}

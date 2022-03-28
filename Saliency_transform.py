@@ -30,12 +30,6 @@ img_size = config["img_size"] # Proportion of image_size(one sided)
 repeat_times = config["repeat_times"]
 early_stop = config["early_stop"]
 
-model = ResNet18(num_classes=10).cuda()
-# optimizer = Adam(model.parameters())
-optimizer = torch.optim.SGD(model.parameters(), lr=0.1,
-                      momentum=0.9, weight_decay=5e-4)
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
-
 # %%
 # Define transformation, this is for cifar10
 transform_train = transforms.Compose([
@@ -98,7 +92,7 @@ def update_all_saliency(interpreter, dataloader):
             if saliency_indices:
                 saliency_dict[id] = saliency_indices
     print(f'Update results: {len(saliency_dict)/len(dataloader)}% are in')
-    return len(saliency_dict) / len(dataloader)
+    return len(saliency_dict) / len(dataloader.dataset)
                 
 
 def get_salient_region(input_saliency, length=None, threshold=0.5):
@@ -108,6 +102,8 @@ def get_salient_region(input_saliency, length=None, threshold=0.5):
     shape = input_saliency.shape
     if length == None:
         length = int(((threshold + 0.1) * shape[0]) // 2)
+    else:
+        length = int((length) * shape[0] // 2)
     # max_saliency = torch.max(input_saliency)
     # min_saliency = torch.min(input_saliency)
     # normalized_saliency = (input_saliency - min_saliency) / (max_saliency - min_saliency)
@@ -228,7 +224,7 @@ def augment_scale(input_images, targets, id_list, scale_range=[0.5, 1.5]):
             elif new_floor > shape[1]:
                 new_floor = shape[1]
                 new_bottom = new_floor - length
-            print(cropped_image.shape)
+            # print(cropped_image.shape)
             input_images[index, :, new_left:new_right, new_bottom:new_floor] = cropped_image
     return input_images
 
@@ -282,6 +278,10 @@ def main():
     now = datetime.now()
     current_time = now.strftime("%d-%m-%Y-%H-%M-%S")
     for times in range(repeat_times):
+        model = ResNet18(num_classes=10).cuda()
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.1,
+                      momentum=0.9, weight_decay=5e-4)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
         file_name = f'./{file_path}/{current_time}/{times}/result.csv'
         file_name_2 = f'./{file_path}/{current_time}/{times}/result_saliency.csv'
         os.makedirs(os.path.dirname(file_name), exist_ok=True)
@@ -306,7 +306,7 @@ def main():
                 if epoch < pretrain_epoch:
                     train_acc = train(trainLoader, model, criterion, optimizer, scheduler, augment_fn_list, augment_prob=0)
                 else:
-                    train_acc = train(trainLoader, model, criterion, optimizer, scheduler, augment_fn_list, augmet_prob=augment_prob)
+                    train_acc = train(trainLoader, model, criterion, optimizer, scheduler, augment_fn_list, augment_prob=augment_prob)
                 val_acc = validate(valLoader, model, criterion, 'Validation')
                 test_acc = validate(testLoader, model, criterion, 'Test')
                 f.write(f'{epoch},{train_acc},{val_acc},{test_acc}\n')
@@ -322,7 +322,8 @@ def main():
                 if early_stop_cnt > early_stop:
                     f.write(f'{current_best_val}, {current_test_acc}\n')
                     break
-                f.write(f'{current_best_val}, {current_test_acc}\n')
+                if epoch == num_epoch - 1:
+                    f.write(f'{current_best_val}, {current_test_acc}\n')
                 
 
 if __name__ == '__main__':
